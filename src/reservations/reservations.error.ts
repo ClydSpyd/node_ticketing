@@ -11,3 +11,10 @@ export class InsufficientInventoryError extends Error {
     this.name = "InsufficientInventoryError";
   }
 }
+
+export class SeatsNotFoundError extends Error {
+  constructor() {
+    super("SEATS_NOT_FOUND");
+    this.name = "SeatsNotFoundError";
+  }
+}

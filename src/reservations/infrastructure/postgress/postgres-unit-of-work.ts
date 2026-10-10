@@ -6,6 +6,7 @@ import type {
 
 import { PostgresReservationRepository } from "./postgres-reservation.repository.js";
 import { PostgresInventoryRepository } from "./postgres-inventory.repository.js";
+import { PostgresEventRepository } from "../../../events/infrastructure/postgres/postgres-event-repository.js";
 
 export class PostgresUnitOfWork implements UnitOfWork {
   constructor(private readonly pool: Pool) {}
@@ -17,7 +18,8 @@ export class PostgresUnitOfWork implements UnitOfWork {
       await client.query("BEGIN");
       const inventory = new PostgresInventoryRepository(client);
       const reservations = new PostgresReservationRepository(client);
-      const workResult = await work({ inventory, reservations });
+      const events = new PostgresEventRepository(client);
+      const workResult = await work({ inventory, reservations, events });
       await client.query("COMMIT");
       return workResult;
     } catch (error) {

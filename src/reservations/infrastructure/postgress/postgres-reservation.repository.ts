@@ -44,4 +44,12 @@ export class PostgresReservationRepository implements ReservationRepository {
       [reservationId, ticketCategoryId, quantity],
     );
   }
+
+  async reserveSeats(reservationId: number, seatIds: number[]): Promise<void> {
+    await this.client.query(
+      `INSERT INTO reserved_seats (reservation_id, event_seat_id)
+          SELECT $1, unnest($2::int[])`,
+      [reservationId, seatIds],
+    );
+  }
 }

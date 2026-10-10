@@ -40,4 +40,35 @@ export class PostgresInventoryRepository implements InventoryRepository {
     );
     return Number(reservedResult.rows[0].reserved_quantity);
   }
+
+  async acquireEventSeats(
+    eventId: number,
+    seatIds: number[],
+  ): Promise<number[]> {
+    const seatsResult = await this.client.query(
+      `SELECT id
+            FROM event_seats
+            WHERE event_id = $1
+                AND id = ANY($2::int[])
+            FOR UPDATE`,
+      [eventId, seatIds],
+    );
+
+    return seatsResult.rows.map((row) => row.id);
+  }
+
+  async checkSeatAvailability(seatIds: number[]): Promise<boolean> {
+    const reservedResult = await this.client.query(
+      `SELECT rs.event_seat_id
+            FROM reserved_seats rs
+            JOIN reservations r
+                ON rs.reservation_id = r.id
+            WHERE rs.event_seat_id = ANY($1::int[])
+                AND r.status = 'ACTIVE'
+                AND r.expires_at > NOW()`,
+      [seatIds],
+    );
+    return reservedResult.rows.length === 0;
+  }
+  
 }

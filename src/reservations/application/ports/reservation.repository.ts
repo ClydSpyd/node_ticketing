@@ -18,7 +18,6 @@ export interface ReservationRepository {
    */
   create(eventId: number): Promise<Reservation>;
 
-
   /**
    * @param reservationId The ID of the reservation to update.
    * @param categoryId The ID of the GA category to reserve.
@@ -32,4 +31,6 @@ export interface ReservationRepository {
     categoryId: number,
     quantity: number,
   ): Promise<void>;
+
+  reserveSeats(reservationId: number, seatIds: number[]): Promise<void>;
 }
