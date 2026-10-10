@@ -7,9 +7,15 @@ import {
   ReserveGAPayloadSchema,
 } from "./reservations.schemas.js";
 import { createGAReservation } from "./application/create-ga-reservation.js";
+import { PostgresUnitOfWork } from "./infrastructure/postgress/postgres-unit-of-work.js";
+import {
+  CategoryNotFoundError,
+  InsufficientInventoryError,
+} from "./reservations.error.js";
 
 export const reservationsRoutes = (app: FastifyInstance) => {
   const typedApp = app.withTypeProvider<TypeBoxTypeProvider>();
+  const unitOfWork = new PostgresUnitOfWork(db);
 
   typedApp.post(
     "/reservations/seats",
@@ -114,27 +120,29 @@ export const reservationsRoutes = (app: FastifyInstance) => {
       schema: { body: ReserveGAPayloadSchema },
     },
     async (request, reply) => {
-      const { categoryId, quantity } = request.body;
+      try {
+        const { categoryId, quantity } = request.body;
+        const reservation = await createGAReservation(
+          { categoryId, quantity },
+          unitOfWork,
+        );
 
-      const result = await createGAReservation({ categoryId, quantity });
-
-      // handle errors from the GA reservation creation
-      if (!result.success) {
-        switch (result.error) {
-          case "CATEGORY_NOT_FOUND":
-            return reply.status(404).send({
-              error: "Ticket category not found",
-            });
-
-          case "INSUFFICIENT_INVENTORY":
-            return reply.status(409).send({
-              error: "Requested capacity unavailable",
-            });
+        return reply.status(201).send(reservation);
+      } catch (error) {
+        if (error instanceof CategoryNotFoundError) {
+          return reply.status(404).send({
+            error: "Ticket category not found",
+          });
         }
-      }
 
-      // return the successfully created GA reservation
-      return reply.status(201).send(result.reservation);
+        if (error instanceof InsufficientInventoryError) {
+          return reply.status(409).send({
+            error: "Requested capacity unavailable",
+          });
+        }
+
+        throw error; // Unexpected errors handled by Fastify
+      }
     },
   );
 };

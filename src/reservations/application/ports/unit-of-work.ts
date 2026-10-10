@@ -1,5 +1,5 @@
-import type { InventoryRepository } from "./inventory.repository.ts";
-import type { ReservationRepository } from "./reservation.repository.ts";
+import type { InventoryRepository } from "./inventory.repository.js";
+import type { ReservationRepository } from "./reservation.repository.js";
 
 export interface TransactionContext {
   inventory: InventoryRepository;
