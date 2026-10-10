@@ -2,7 +2,11 @@ import { FastifyInstance } from "fastify";
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { db } from "../db.js";
 
-import { ReserveSeatsPayloadSchema, ReserveGAPayloadSchema } from "./reservations.schemas.js";
+import {
+  ReserveSeatsPayloadSchema,
+  ReserveGAPayloadSchema,
+} from "./reservations.schemas.js";
+import { createGAReservation } from "./application/create-ga-reservation.js";
 
 export const reservationsRoutes = (app: FastifyInstance) => {
   const typedApp = app.withTypeProvider<TypeBoxTypeProvider>();
@@ -105,86 +109,32 @@ export const reservationsRoutes = (app: FastifyInstance) => {
   );
 
   typedApp.post(
-    '/reservations/ga',
+    "/reservations/ga",
     {
-      schema: { body: ReserveGAPayloadSchema }
+      schema: { body: ReserveGAPayloadSchema },
     },
     async (request, reply) => {
       const { categoryId, quantity } = request.body;
-      const client = await db.connect();
 
-      try {
+      const result = await createGAReservation({ categoryId, quantity });
 
-        await client.query("BEGIN");
+      // handle errors from the GA reservation creation
+      if (!result.success) {
+        switch (result.error) {
+          case "CATEGORY_NOT_FOUND":
+            return reply.status(404).send({
+              error: "Ticket category not found",
+            });
 
-        const category = await client.query(`
-          SELECT capacity, event_id from ticket_categories
-          WHERE id = $1
-          FOR UPDATE`,
-          [categoryId],
-        );
-
-        if (category.rows.length === 0) {
-          await client.query("ROLLBACK");
-          return reply.status(404).send({ error: "Ticket category not found" });
+          case "INSUFFICIENT_INVENTORY":
+            return reply.status(409).send({
+              error: "Requested capacity unavailable",
+            });
         }
-
-        const reservedResult = await client.query(`
-          SELECT COALESCE(SUM(rga.quantity), 0) AS reserved_quantity
-          FROM reserved_ga rga
-          JOIN reservations r ON r.id = rga.reservation_id
-          WHERE r.status = 'ACTIVE'
-            AND r.expires_at > NOW()
-            AND rga.ticket_category_id = $1`,
-          [categoryId],
-        );
-
-        const reservedQuantity = Number(
-          reservedResult.rows[0].reserved_quantity
-        );
-        const availableCapacity = category.rows[0].capacity - reservedQuantity;
-
-        if(availableCapacity < quantity) {
-          await client.query("ROLLBACK");
-          return reply
-            .status(409)
-            .send({ error: "Requested capacity unavailable" });
-        }
-
-        const reservationResult = await client.query(`
-          INSERT INTO reservations (
-            event_id,
-            status,
-            expires_at
-          )
-          VALUES ($1, 'ACTIVE', NOW() + INTERVAL '10 minutes')
-          RETURNING id
-          `,[category.rows[0].event_id]);
-
-
-        // get the inserted reservation
-        const reservation = reservationResult.rows[0];
-
-        await client.query(`
-          INSERT INTO reserved_ga (
-            reservation_id,
-            ticket_category_id,
-            quantity
-          )
-          VALUES ($1, $2, $3)
-        `, [reservation.id, categoryId, quantity]);
-
-        await client.query("COMMIT");
-        reply.status(201).send({ id: reservation.id });
-        
-      } catch (error) {
-        await client.query("ROLLBACK");
-        throw error;
-      } finally {
-        client.release();
       }
-      
-    }
-  );
 
+      // return the successfully created GA reservation
+      return reply.status(201).send(result.reservation);
+    },
+  );
 };
