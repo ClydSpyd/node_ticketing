@@ -1,7 +1,7 @@
 export type Reservation = {
   id: number;
   eventId: number;
-  status: "ACTIVE" | "EXPIRED" | "CANCELLED";
+  status: ReservationStatus;
   expiresAt: string;
 };
 
@@ -10,3 +10,11 @@ export type GACategory = {
   eventId: number;
   capacity: number;
 };
+
+export type ReservationStatus =
+  | "ACTIVE"
+  | "EXPIRED"
+  | "PENDING_PAYMENT"
+  | "PENDING_RECONCILIATION"
+  | "COMPLETED"
+  | "FAILED";
