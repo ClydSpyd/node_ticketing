@@ -1,7 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { db } from "../db.js";
-
 import {
   ReserveSeatsPayloadSchema,
   ReserveGAPayloadSchema,
@@ -52,7 +51,7 @@ export const reservationsRoutes = (app: FastifyInstance) => {
             error: "One or more seats unavailable",
           });
         }
-        
+
         throw error; // Unexpected errors handled by Fastify
       }
     },

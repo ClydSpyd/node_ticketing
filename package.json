@@ -7,7 +7,9 @@
     "dev": "tsx watch src/server.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "test": "NODE_ENV=test DB_NAME=ticketing_test vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -18,7 +20,8 @@
     "@types/pg": "^8.23.1",
     "prettier-plugin-sql-cst": "^0.22.1",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "@fastify/type-provider-typebox": "^6.1.0",

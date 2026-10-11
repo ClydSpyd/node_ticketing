@@ -1,22 +1,11 @@
-import Fastify from "fastify";
-import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import { buildApp } from "./app.js";
 
-import { eventRoutes } from "./events/events.routes.js";
-import { reservationsRoutes } from "./reservations/reservations.routes.js";
+const app = buildApp();
 
-const app = Fastify({
-  //   logger: true,
-}).withTypeProvider<TypeBoxTypeProvider>();
-
-app.get("/health", async () => {
-  return {
-    status: "ok :)",
-  };
-});
-
-app.register(eventRoutes);
-app.register(reservationsRoutes);
-
-await app.listen({
-  port: 3000,
-});
+try {
+  await app.listen({ port: 8080 });
+  console.log("Server listening on port 8080");
+} catch (error) {
+  app.log.error(error);
+  process.exit(1);
+}
