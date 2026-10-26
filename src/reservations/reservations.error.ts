@@ -18,3 +18,24 @@ export class SeatsNotFoundError extends Error {
     this.name = "SeatsNotFoundError";
   }
 }
+
+export const ReservationNotFoundError = class extends Error {
+  constructor() {
+    super("RESERVATION_NOT_FOUND");
+    this.name = "ReservationNotFoundError";
+  }
+};
+
+export const StateTransitionNotPermittedError = class extends Error {
+  constructor() {
+    super("STATE_TRANSITION_NOT_PERMITTED");
+    this.name = "StateTransitionNotPermittedError";
+  }
+};
+
+export const ReservationExpiredError = class extends Error {
+  constructor() {
+    super("RESERVATION_EXPIRED");
+    this.name = "ReservationExpiredError";
+  }
+};

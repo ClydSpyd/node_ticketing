@@ -1,6 +1,7 @@
 import type { PoolClient } from "pg";
 import { GACategory } from "../../reservations.types.js";
 import type { InventoryRepository } from "../../application/ports/inventory.repository.js";
+import { INVENTORY_OCCUPIED_SQL } from "./postrgres-inventory-queries.js";
 
 export class PostgresInventoryRepository implements InventoryRepository {
   constructor(private readonly client: PoolClient) {}
@@ -33,8 +34,7 @@ export class PostgresInventoryRepository implements InventoryRepository {
           SELECT COALESCE(SUM(rga.quantity), 0) AS reserved_quantity
           FROM reserved_ga rga
           JOIN reservations r ON r.id = rga.reservation_id
-          WHERE r.status = 'ACTIVE'
-            AND r.expires_at > NOW()
+          WHERE ${INVENTORY_OCCUPIED_SQL}
             AND rga.ticket_category_id = $1`,
       [categoryId],
     );
@@ -64,11 +64,9 @@ export class PostgresInventoryRepository implements InventoryRepository {
             JOIN reservations r
                 ON rs.reservation_id = r.id
             WHERE rs.event_seat_id = ANY($1::int[])
-                AND r.status = 'ACTIVE'
-                AND r.expires_at > NOW()`,
+                AND ${INVENTORY_OCCUPIED_SQL}`,
       [seatIds],
     );
     return reservedResult.rows.length === 0;
   }
-  
 }

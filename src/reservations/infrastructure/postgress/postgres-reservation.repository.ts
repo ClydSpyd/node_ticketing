@@ -1,5 +1,8 @@
 import type { PoolClient } from "pg";
-import type { Reservation } from "../../reservations.types.js";
+import type {
+  Reservation,
+  ReservationStatus,
+} from "../../reservations.types.js";
 import type { ReservationRepository } from "../../application/ports/reservation.repository.js";
 
 export class PostgresReservationRepository implements ReservationRepository {
@@ -50,6 +53,48 @@ export class PostgresReservationRepository implements ReservationRepository {
       `INSERT INTO reserved_seats (reservation_id, event_seat_id)
           SELECT $1, unnest($2::int[])`,
       [reservationId, seatIds],
+    );
+  }
+
+  async findByIdForUpdate(id: number): Promise<Reservation | null> {
+    const result = await this.client.query(
+      `SELECT id, event_id, status, expires_at
+     FROM reservations
+     WHERE id = $1
+     FOR UPDATE`,
+      [id],
+    );
+
+    const row = result.rows[0];
+
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      eventId: row.event_id,
+      status: row.status,
+      expiresAt: row.expires_at,
+    };
+  }
+
+  async updateStatus(id: number, status: ReservationStatus): Promise<void> {
+    await this.client.query(
+      `
+          UPDATE reservations
+          SET status = $2
+          WHERE id = $1
+        `,
+      [id, status],
+    );
+  }
+
+  async startPayment(id: number): Promise<void> {
+    await this.client.query(
+      ` UPDATE reservations
+        SET status = 'PENDING_PAYMENT',
+        payment_deadline = NOW() + INTERVAL '5 minutes'
+        WHERE id = $1`,
+      [id],
     );
   }
 }

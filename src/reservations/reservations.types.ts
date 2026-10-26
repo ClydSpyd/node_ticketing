@@ -2,7 +2,7 @@ export type Reservation = {
   id: number;
   eventId: number;
   status: ReservationStatus;
-  expiresAt: string;
+  expiresAt: Date;
 };
 
 export type GACategory = {

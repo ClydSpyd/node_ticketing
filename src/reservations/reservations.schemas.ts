@@ -14,3 +14,7 @@ export const ReserveGAPayloadSchema = Type.Object({
     minimum: 1,
   }),
 });
+
+export const startPaymentPayloadSchema = Type.Object({
+  reservationId: Type.Integer(),
+});
